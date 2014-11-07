@@ -1,3 +1,5 @@
+####### Baseline R from GitHub
+
 # History files
 .Rhistory
 
@@ -9,3 +11,31 @@
 
 # RStudio files
 .Rproj.user/
+
+###### ADDED by Bob
+
+# other binary
+*.o
+*.exe
+
+# temporary latex files
+*~
+*.idx
+*.ilg
+*.ind
+*.fdb_latexmk
+*.fls
+
+# depedencies files
+*.d
+*.hpp.d.*
+.Rproj.user
+stan.Rproj
+.Rapp.history
+
+# For the Mac
+*.DS_Store
+
+
+
+
