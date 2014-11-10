@@ -49,6 +49,25 @@ functions {
     return dC_dt;
   }
 
+  /**
+   * Compute total evolved CO2 from the system given the specified
+   * parameters and times.  This is done by simulating the system
+   * defined by the ODE function two_pool_feedback and then
+   * subtracting the sum of the CO2 estimated in each pool from the
+   * initial CO2.
+   *
+   * @param T number of times.
+   * @param t0 initial time.
+   * @param ts observation times.
+   * @param gamma partitioning coefficient.
+   * @param k1 decomposition rate for pool 1
+   * @param k2 decomposition rate for pool 2
+   * @param alpha21 transfer coefficient from pool 2 to 1
+   * @param alpha12 transfer coefficient from pool 1 to 2
+   * @param x_r real data (empty)
+   * @param x_i integer data (empty)
+   * @return evolved CO2 for times ts
+   */
   real[] evolved_CO2(int T, real t0, real[] ts,
                      real gamma, real totalC_t0,
                      real k1, real k2, 
