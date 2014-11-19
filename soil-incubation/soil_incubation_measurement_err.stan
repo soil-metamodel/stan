@@ -106,7 +106,8 @@ data {
   int<lower=0> N_t;            // number of measurement times
   real<lower=t0> ts[N_t];      // measurement times
 
-  real<lower=0> eCO2mean[N_t]; // measured cumulative evolved carbon
+  vector<lower=0>[N_t] eCO2mean; // measured cumulative evolved carbon
+  real<lower=0> eCO2sd[N_t];   // measured cumulative evolved carbon
 }
 transformed data {
   real x_r[0];                 // no real data for ODE system
@@ -122,6 +123,8 @@ parameters {
   real<lower=0,upper=1> gamma; // partitioning coefficient
 
   real<lower=0> sigma;         // observation std dev
+
+  vector<lower=0>[N_t] eCO2;     // evolved CO2
 }
 transformed parameters {
   real eCO2_hat[N_t];
@@ -137,18 +140,15 @@ model {
   alpha12 ~ normal(0,1);
   sigma ~ normal(0,1);
 
+  // can we compound measurement error and sampling model?
+
+  // measurement error (eCO2mean is data, so no Jacobian needed)
+  exp(eCO2mean) ~ normal(eCO2,eCO2sd);
+
   // likelihood
   for (t in 1:N_t)
-    eCO2mean[t] ~ normal(eCO2_hat[t], sigma);   // normal error
+    exp(eCO2[t]) ~ normal(eCO2_hat[t], sigma);   // normal error
+
+  // log(abs(d/d.u exp(u))) = u
+  increment_log_prob(sum(eCO2));  // log Jacobian of exp (inverse) transform
 }
-
-// Uncomment the generated quantities to define a new simulated data
-// set for each draw
-
-// generated quantities {
-//   real eCO2_sim[N_t];  // new simulated data set
-//   eCO2_sim <- evolved_CO2(T, t0, ts, gamma, totalC_t0,
-//                           k1, k2, alpha21, alpha12);
-//   for (t in 1:N_t)
-//     eCO2_sim[t] <- eCO2_sim[t] + normal_rng(sd_eCO2);
-// }

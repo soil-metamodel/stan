@@ -7,11 +7,16 @@ library(ggplot2);
 
 source("AK_T25.data.R");  
 
-fit <- stan("soil_incubation.stan",
-            data=c("totalC_t0", "t0", "N_t", "ts", "eCO2mean"),
+fit <- stan("soil_incubation_measurement_err.stan",
+            data=c("totalC_t0", "t0", "N_t", "ts", "eCO2mean", "eCO2sd"),
             control=list(adapt_delta=0.95,
-                         stepsize=0.01),
-            chains=4, iter=500, seed=1234);
+                         stepsize=0.005),
+            chains=1, iter=200, seed=1234, 
+            refresh=2);
+
+model <- stan_model("soil_incubation_measurement_err.stan");
+opt <- optimizing(model, data=c("totalC_t0", "t0", "N_t", "ts", "eCO2mean", "eCO2sd"));
+
 
 # to generate version of figure 2 in Mueller & Sierra (2014)
 pairs_plot <- function(fit) {
