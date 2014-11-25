@@ -46,7 +46,7 @@ functions {
     alpha12 <- theta[4];
     
     dC_dt[1] <- -k1 * C[1] + alpha12 * k2 * C[2];
-    dC_dt[2] <- alpha21 * k1 * C[1] - k2 * C[2];
+    dC_dt[2] <- - k2 * C[2] + alpha21 * k1 * C[1] ;
 
     return dC_dt;
   }
@@ -135,20 +135,9 @@ model {
   k2 ~ normal(0,1);
   alpha21 ~ normal(0,1);
   alpha12 ~ normal(0,1);
-  sigma ~ normal(0,1);
+  sigma ~ cauchy(0,1);
 
   // likelihood
   for (t in 1:N_t)
     eCO2mean[t] ~ normal(eCO2_hat[t], sigma);   // normal error
 }
-
-// Uncomment the generated quantities to define a new simulated data
-// set for each draw
-
-// generated quantities {
-//   real eCO2_sim[N_t];  // new simulated data set
-//   eCO2_sim <- evolved_CO2(T, t0, ts, gamma, totalC_t0,
-//                           k1, k2, alpha21, alpha12);
-//   for (t in 1:N_t)
-//     eCO2_sim[t] <- eCO2_sim[t] + normal_rng(sd_eCO2);
-// }
