@@ -6,7 +6,6 @@ output:
   html_document:
     fig_caption: yes
     theme: cerulean
-  pdf_document: default
 ---
 
 ----
@@ -24,7 +23,7 @@ _Soil incubation experiment in progress at the Max Planck Institute, Jena._
 
 #### Physical Models
 
-<p>Most soil-carbon physical models approximate soil heterogeneity with discrete pools of carbon.  For example, a two-compartment model posits a labile pool of carbon with readily available carbon and a recalcitrant pool from which carbon evolves more slowly.  Systems may also posit additional pools for biomass, enzymes, and other physical features of soil ecology.  System dynamics are modeled with differential equations describing flows among the compartments. 
+<p>Most soil-carbon physical models approximate soil heterogeneity with discrete pools of carbon.  For example, a two-compartment model posits a labile pool of carbon with readily available carbon and a recalcitrant pool from which carbon evolves more slowly.  Systems may also posit additional pools for microbes, enzymes, and other physical features of soil ecology.  Some of these pools may be measured.  System dynamics are modeled with differential equations describing flows among the compartments. 
 
 #### Statistical Models and Inference
 
@@ -52,9 +51,9 @@ The rest of this document describes
 
 ## Data
 
-Schädel et al. (2013) performed a soil incubation experiment in which they took a series of 25 measurements over time of evolved CO<sub>2</sub>.  At each time point, multiple readings were taken from replicates and aggregated into a mean and standard deviation.  
+Sierra and Müller (2014) performed a soil incubation experiment in which they took a series of 25 measurements over time of evolved CO<sub>2</sub>.  At each time point, multiple readings were taken from replicates and aggregated into a mean and standard deviation.
 
-The data is loaded here through Sierra and Müller's (2014) [SoilR](http://cran.r-project.org/web/packages/SoilR/index.html) package, version 1.1-22.
+The data can be read in through Sierra and Müller's (2014) [SoilR](http://cran.r-project.org/web/packages/SoilR/index.html) package.
 
 #### Load Data
 ```{r}
@@ -92,7 +91,7 @@ plot(plot_data);
 
 #### Two Pool Linear Model with Feedback
 
-Schädel et al. (2013) consider one, two, and three pool models in their ability to model the observed data.  Sierra and Müller (2014) present a two-pool model with decomposition rates for each pool as well as transfer rates from one pool to another. 
+Sierra and Müller (2014) present a two-pool model with decomposition rates for each pool as well as transfer rates from one pool to another. 
 
 Let $C(t) = (C_1(t), C_2(t))$ be the concentration of carbon in pools 1 and 2.  The model assumes pool-specific decomposition rates $\kappa_1, \kappa_2$ and transfer rates $\alpha_{2,1}$ and $\alpha_{1,2}$ from pool 2 to pool 1 and vice-versa.  The system dynamics are modeled through the equations
 $$
@@ -111,17 +110,15 @@ Given initial carbon concentrations $C(0)$ at $t = 0$ and values for parameters 
 
 ##### Initial State Measurement
 
-Because the two pools are theoretical constructs to account for soil heterogeneity, they are not measured directly.  Instead, only the total initial carbon $C_1(0) + C_2(0)$ is observed, not how it is partitioned between the two pools.  
+Because the two pools are theoretical constructs to account for soil heterogeneity, they are not measured directly.  Instead, only the total initial carbon $C_1(0) + C_2(0)$ is measured, not how it is partitioned between the two pools.  
 
 ##### Evolved Carbon Measurement
 
-Then, for each measurement time $t_n$, the total carbon evolved (i.e., respirated out of the system) since $t_{n-1}$ is measured, i.e.,
-$\left[ C_1(t_{n-1}) + C_2(t_{n-1}) \right] - \left[ C_1(t_n) + C_2(t_n) \right]$.
-
-The data set downloaded from the SoilR package provides, for each time $t_n$, the total carbon evolved in the form of carbon dioxide (CO<sub>2</sub>) since $t=0$,
+For each measurement time $t_n$, the total carbon evolved from the system since the initial time $t = 0$ is measured and recorded as $\mbox{eCO}_2(t_n)$. This measurement is of the quantity predicted by the system of differential equations to be the total initial carbon minus what is left in the pools at time $t_n$,
 $$
-\mbox{eCO}_2(t_n) = \left[ C_1(0) + C_2(0) \right] - \left[ C_1(t_n) + C_2(t_n) \right].
+\left[ C_1(0) + C_2(0) \right] - \left[ C_1(t_n) + C_2(t_n) \right].
 $$
+The SoilR package provides the $\mbox{eCO2}_2(t_n)$ measurements.
 
 #### Statistical Model Parameters
 
@@ -140,7 +137,7 @@ $\sigma$ | $(0,\infty)$ | residual error scale
 
 ##### Priors
 
-Weakly informative priors are supplied for all parameters, whose rough values are known from prior experiments.
+Weakly informative priors are supplied for all parameters, whose rough values are known from previous experiments.
 
 $$\gamma \sim \mbox{Beta}(10,1)$$
 
@@ -152,19 +149,22 @@ $$\sigma \sim \mbox{Cauchy}(0,1)$$
 
 The sampling distribution is a standard predictive error model assuming normal error of predictions,
 
-$$y_t \sim \mbox{Normal}(\hat{y}_t, \sigma),$$
+$$\mbox{eCO}_2(t) \sim \mbox{Normal}(\hat{\mbox{eCO}_2}(t), \sigma),$$
 
-where $y_t$ is the measured eCO<sub>2</sub> and $\hat{y}_t$ is the estimate of eCO<sub>2</sub> derived from the solution to the system equations given initial condition $C(0)$ and model parameters $(\gamma,\kappa,\alpha,\sigma)$.
+where $\mbox{eCO}_2(t)$ is the measured evolved carbon and $\hat{\mbox{eCO}_2}(t)$ is
+the estimate of evolved carbon based on the solutions $C(t)$ to the system equations given initial condition $C(0)$ and model parameters $(\gamma,\kappa,\alpha,\sigma)$.
+
+With this model, the noise scale $\sigma$ is accounting both for measurement error in $\mbox{eCO}_2(t)$ and the misprediction of the model with estimated parameters.
 
 
 ##### Posterior Distribution
 
 By Bayes's rule, the posterior distribution of the parameters given the observations is
 $$
-p(\gamma,\kappa,\alpha,\sigma \, | \, y,C(0))
-\ \propto \ p(y \, | \, \gamma,\kappa,\alpha,\sigma,C(0)) \ p(\gamma,\kappa,\alpha,\sigma).
+p(\gamma,\kappa,\alpha,\sigma \, | \, \mbox{eCO}_2,C(0))
+\ \propto \ p(\mbox{eCO}_2 \, | \, \gamma,\kappa,\alpha,\sigma,C(0)) \ p(\gamma,\kappa,\alpha,\sigma).
 $$
-Here, $y_t$ is the cumulative $\mbox{eCO}_2(t)$ measurements provided in the data.
+Here, $\mbox{eCO}_2$ is the full sequence of evolved carbon measurements.
 
 #### Stan Program
 
@@ -194,7 +194,7 @@ fit <- stan("soil_incubation.stan",
             data=c("totalC_t0", "t0", "N_t", "ts", "eCO2mean"),
             control=list(adapt_delta=0.90,
                          stepsize=0.005),
-            chains=2, iter=200, seed=1234);
+            chains=4, iter=1000, seed=1234);
 ```
 
 
@@ -238,7 +238,7 @@ If Stan does not mix well, try lowering the initial step size, increasing the ta
 The `pairs()` function in RStan displays a grid of plots.  The diagonal contains a histogram of the posterior samples for each parameter;  the above and below diagonals provide scatterplots for pairs of parameters.  The above and below plots are based on draws from the two different Markov chains.
 
 ```{r}
-pairs(fit, pars=c("k1","k2","alpha21","alpha12","gamma"));
+pairs(fit, pars=c("k1","k2","alpha21","alpha12","gamma","sigma"));
 ```
 
 
@@ -283,34 +283,40 @@ There are several next steps which may depend on each other.
 
 ##### Two-Pool Model
 
-0.  Make sure the parameterization is consistent.  I think $\alpha_{1,2}$ and $\alpha_{2,1}$ may have been swapped from Sierra and Müller's (2014) presentation.
+1.  Move noise to log scale to respect positivity constraint.  This will make it multiplicative instead of additive;  verify this with exploratory data analysis comparing residual to value.  
 
-1. Evaluate a reparameterization of the models in terms of independent $a_{2,1} = \alpha_{2,1} \, \kappa_2$ and $a_{1,2} = \alpha_{1,2} \, \kappa_1$.  Alternatively, consider total decay $\kappa_1$ for pool 1 and then split that with a parameter in $(0,1)$ between evolution and pool 2.
+2. Evaluate some reparameterizations
+    * independent $a_{2,1} = \alpha_{2,1} \, \kappa_2$ and $a_{1,2} = \alpha_{1,2} \, \kappa_1$, and
+    * total decay $\kappa_1$ for pool 1 and then split that with a parameter in $(0,1)$ between evolution and pool 2
 
-2.  Move noise to log scale to respect positivity constraint.  This will make it multiplicative instead of additive;  verify this with exploratory data analysis comparing residual to value.  
+3.  Implement a measurement error model for each aggregated observation.  This will presuppose an underlying true carbon concentration which is measured with error on several samples to produce the reported mean and standard deviations.  
 
-3.  Implement a measurement error model for each aggregated observation.  This will presuppose an underlying true carbon concentration which is measured with error on several samples to produce the reported mean and standard deviations.  Figure out if this provides more accurate estimates or less uncertainty.
-
-4. Evaluate a measurement error model that directly models observed measurements, 
-$$
-\left[ C_1(t_n) + C_2(t_n) \right] - \left[ C_1(t_{n-1}) + C_2(t_{n-1}) \right].
-$$
-First validate this is what's actually being measured---CO<sub>2</sub> emitted since last measurement.  I don't see how it could be given that eCO2mean measuremens can go down from point to point and I don't think they could've measured a negative concentration, even by averaging.
+4.  Work directly with the individual measurements in a hierarchical model.
 
 
+##### Michaelis-Menten, Forward and Backward
 
+These are models that involve an enzyme pool and biomass data and data from two carbon pools (or maybe just the aggregate). 
 
-##### Mixture Models 
+5.  Get the data into usable format.
 
-4.  Implement forward Michaelis-Menten kinetics.
+6.  Write out math for forward and reverse models.
 
-5.  Implement reverse Michaelis-Menten kinetics.
+7.  Write out statistical models.
 
-6.  Evaluate mixture model at observation level of both.
+8.  Implement forward Michaelis-Menten kinetics.
 
-7.  Evaluate change point model going from forward to reverse.
+9.  Implement reverse Michaelis-Menten kinetics.
 
+##### Mixture Models
 
+10.  Evaluate mixture model at each observation level, which will require running the integrator to solve the diff eqs just between observation times.  Each new integration will have to take up where the last solver left off.
+
+11.  Evaluate change point model going from forward to reverse kinetics.  This will require evaluating the integrator over intial and final intervals of time points.
+
+##### Replication and Tutorial
+
+12.  Implement the second example of radiocarbon from Sierra and Müller (2014).
 
 ### References
 
@@ -323,8 +329,11 @@ First validate this is what's actually being measured---CO<sub>2</sub> emitted s
 #### R Packages
 
 * Statistics: [RStan](http://mc-stan.org/rstan.html)
+
 * Plots: [ggplot2](http://ggplot2.org)
+
 * Data: [SoilR](http://cran.r-project.org/web/packages/SoilR/index.html)
+
 * Presentation: [knitr](http://yihui.name/knitr/)
 
 
