@@ -106,6 +106,7 @@ data {
   int<lower=0> N_t;            // number of measurement times
   real<lower=t0> ts[N_t];      // measurement times
 
+
   real<lower=0> eCO2mean[N_t]; // measured cumulative evolved carbon
 }
 transformed data {

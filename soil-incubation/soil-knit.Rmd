@@ -3,12 +3,14 @@ title: "Soil Carbon Modeling with RStan"
 author: "Bob Carpenter"
 date: "24 November 2014"
 output:
+  pdf_document: default
   html_document:
     fig_caption: yes
     theme: cerulean
 ---
 
 ----
+
 
 
 ### Overview
@@ -23,7 +25,7 @@ _Soil incubation experiment in progress at the Max Planck Institute, Jena._
 
 #### Physical Models
 
-<p>Most soil-carbon physical models approximate soil heterogeneity with discrete pools of carbon.  For example, a two-compartment model posits a labile pool of carbon with readily available carbon and a recalcitrant pool from which carbon evolves more slowly.  Systems may also posit additional pools for microbes, enzymes, and other physical features of soil ecology.  Some of these pools may be measured.  System dynamics are modeled with differential equations describing flows among the compartments. 
+<p>Most soil-carbon physical models approximate soil heterogeneity with discrete pools of carbon.  For example, a two-compartment model posits a labile pool of carbon with readily available carbon and a recalcitrant pool from which carbonr evolves more slowly.  Systems may also posit additional pools for microbes, enzymes, and other physical features of soil ecology.  Some of these pools may be measured.  System dynamics are modeled with differential equations describing flows among the compartments. 
 
 #### Statistical Models and Inference
 
@@ -48,6 +50,11 @@ The rest of this document describes
 
 
 &nbsp;
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
 
 ## Data
 
@@ -171,11 +178,9 @@ Here, $\mbox{eCO}_2$ is the full sequence of evolved carbon measurements.
 The following is a dump of a file containing the Stan program to implement the 2-pool model with feedback as described above; the model code is fully documented, and is explained at more length below. 
 
 ```{r comment=NA}
-lines <- 
-  readLines("/Users/carp/github/soil-metamodel/stan/soil-incubation/soil_incubation.stan",
-            encoding="ASCII");
-for (n in 1:length(lines))
-  cat(lines[n],'\n');
+file_path <- "soil_incubation.stan";
+lines <- readLines(file_path, encoding="ASCII");
+for (n in 1:length(lines)) cat(lines[n],'\n');
 ```
 
 The Stan program begins by defining two convenience functions in the functions block.    
@@ -194,7 +199,7 @@ fit <- stan("soil_incubation.stan",
             data=c("totalC_t0", "t0", "N_t", "ts", "eCO2mean"),
             control=list(adapt_delta=0.90,
                          stepsize=0.005),
-            chains=4, iter=1000, seed=1234);
+            chains=2, iter=200, seed=1234);
 ```
 
 
@@ -276,6 +281,38 @@ ggplot(df_post, aes(x = ts)) +
   ggtitle("Soil Incubation: 2 pools, feedback\nposterior median (red), predictive 95% (yellow)");
 ```
 
+### Measurement Error Model
+
+It is straightforward to add a measurement error component to the model.
+
+```{r comment=NA}
+file_path <- "soil_incubation_measurement_err.stan";
+lines <- readLines(file_path, encoding="ASCII");
+for (n in 1:length(lines)) cat(lines[n],'\n');
+```
+
+This can be fit as before; note the additional data variable, `eCO2sd`.
+
+```{r, cache.extra = tools::md5sum("soil_incubation_measurement_err.stan")}
+fit_me <- stan("soil_incubation_measurement_err.stan",
+              data=c("totalC_t0", "t0", "N_t", "ts", "eCO2mean", "eCO2sd"),
+              control=list(adapt_delta=0.90,
+                           stepsize=0.005),
+              chains=2, iter=100, seed=1234);
+```
+
+Here is the summary of the posterior samples from the measurement error model.
+
+```{r}
+options(width="100");
+print(fit_me,digits=2);
+```
+
+And the traceplots.
+
+```{r}
+traceplot(fit_me, c("k1","k2","alpha21","alpha12","gamma","sigma"));
+```
 
 ### Next Steps
 
